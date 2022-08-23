@@ -4,7 +4,7 @@ namespace TeamTNT\TNTSearch;
 
 class TNTFuzzyMatch
 {
-    public function norm($vec)
+    public static function norm($vec)
     {
         $norm       = 0;
         $components = count($vec);
@@ -16,7 +16,7 @@ class TNTFuzzyMatch
         return sqrt($norm);
     }
 
-    public function dot($vec1, $vec2)
+    public static function dot($vec1, $vec2)
     {
         $prod       = 0;
         $components = count($vec1);
@@ -28,7 +28,7 @@ class TNTFuzzyMatch
         return $prod;
     }
 
-    public function wordToVector($word)
+    public static  function wordToVector($word)
     {
         $alphabet = "aAbBcCčČćĆdDđĐeEfFgGhHiIjJkKlLmMnNoOpPqQrRsSšŠtTvVuUwWxXyYzZžŽ1234567890'+ /";
 
@@ -39,18 +39,18 @@ class TNTFuzzyMatch
         return $result;
     }
 
-    public function angleBetweenVectors($a, $b)
+    public static  function angleBetweenVectors($a, $b)
     {
-        $denominator = ($this->norm($a) * $this->norm($b));
+        $denominator = (self::norm($a) * self::norm($b));
 
         if ($denominator == 0) {
             return 0;
         }
 
-        return $this->dot($a, $b) / $denominator;
+        return self::dot($a, $b) / $denominator;
     }
 
-    public function hasCommonSubsequence($pattern, $str)
+    public static function hasCommonSubsequence($pattern, $str)
     {
         $pattern = mb_strtolower($pattern);
         $str     = mb_strtolower($str);
@@ -68,7 +68,7 @@ class TNTFuzzyMatch
         return ($j == $patternLength);
     }
 
-    public function makeVectorSameLength($str, $pattern)
+    public static function makeVectorSameLength($str, $pattern)
     {
         $j   = 0;
         $max = max(count($pattern), count($str));
@@ -87,29 +87,29 @@ class TNTFuzzyMatch
         return $b;
     }
 
-    public function fuzzyMatchFromFile($pattern, $path)
+    public static function fuzzyMatchFromFile($pattern, $path)
     {
         $res   = [];
         $lines = fopen($path, "r");
         if ($lines) {
             while (!feof($lines)) {
                 $line = rtrim(fgets($lines, 4096));
-                if ($this->hasCommonSubsequence($pattern, $line)) {
+                if (self::hasCommonSubsequence($pattern, $line)) {
                     $res[] = $line;
                 }
             }
             fclose($lines);
         }
 
-        $paternVector = $this->wordToVector($pattern);
+        $paternVector = self::wordToVector($pattern);
 
         $sorted = [];
         foreach ($res as $caseSensitiveWord) {
             $word                   = mb_strtolower(trim($caseSensitiveWord));
-            $wordVector             = $this->wordToVector($word);
-            $normalizedPaternVector = $this->makeVectorSameLength($wordVector, $paternVector);
+            $wordVector             = self::wordToVector($word);
+            $normalizedPaternVector = self::makeVectorSameLength($wordVector, $paternVector);
 
-            $angle = $this->angleBetweenVectors($wordVector, $normalizedPaternVector);
+            $angle = self::angleBetweenVectors($wordVector, $normalizedPaternVector);
 
             if (strpos($word, $pattern) !== false) {
                 $angle += 0.2;
@@ -121,25 +121,25 @@ class TNTFuzzyMatch
         return $sorted;
     }
 
-    public function fuzzyMatch($pattern, $items)
+    public static function fuzzyMatch($pattern, $items)
     {
         $res = [];
 
         foreach ($items as $item) {
-            if ($this->hasCommonSubsequence($pattern, $item)) {
+            if (self::hasCommonSubsequence($pattern, $item)) {
                 $res[] = $item;
             }
         }
 
-        $paternVector = $this->wordToVector($pattern);
+        $paternVector = self::wordToVector($pattern);
 
         $sorted = [];
         foreach ($res as $word) {
             $word                   = trim($word);
-            $wordVector             = $this->wordToVector($word);
-            $normalizedPaternVector = $this->makeVectorSameLength($wordVector, $paternVector);
+            $wordVector             = self::wordToVector($word);
+            $normalizedPaternVector = self::makeVectorSameLength($wordVector, $paternVector);
 
-            $angle = $this->angleBetweenVectors($wordVector, $normalizedPaternVector);
+            $angle = self::angleBetweenVectors($wordVector, $normalizedPaternVector);
 
             if (strpos($word, $pattern) !== false) {
                 $angle += 0.2;

@@ -1,5 +1,5 @@
 {
-    "name": "teamtnt/tntsearch",
+    "name": "swalter88/tntsearch",
     "type": "library",
     "description": "A fully featured full text search engine written in PHP",
     "keywords": [
@@ -13,9 +13,14 @@
         "stemming",
         "fuzzy search"
     ],
-    "homepage": "https://github.com/teamtnt/tntsearch",
+    "homepage": "https://github.com/swalter88/tntsearch",
     "license": "MIT",
     "authors": [{
+        "name": "Sven Walter",
+        "email": "svenwalter88@gmail.com",
+        "homepage": "https://github.com/swalter88",
+        "role": "Developer"
+    }, {
         "name": "Nenad Tičarić",
         "email": "nticaric@gmail.com",
         "homepage": "http://www.tntstudio.us",
@@ -34,9 +39,6 @@
     "autoload": {
         "psr-4": {
             "TeamTNT\\TNTSearch\\": "src"
-        },
-        "files": [
-            "helper/helpers.php"
-        ]
+        }
     }
 }

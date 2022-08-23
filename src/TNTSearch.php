@@ -24,6 +24,7 @@ class TNTSearch
     public $fuzzy_prefix_length  = 2;
     public $fuzzy_max_expansions = 50;
     public $fuzzy_distance       = 2;
+    public $fuzzy_no_limit       = false;
     protected $dbh               = null;
 
     /**
@@ -105,12 +106,13 @@ class TNTSearch
         $dlWeight  = 0.5;
         $docScores = [];
         $count     = $this->totalDocumentsInCollection();
+        $noLimit = $this->fuzzy_no_limit;
 
         foreach ($keywords as $index => $term) {
             $isLastKeyword = ($keywords->count() - 1) == $index;
             $df            = $this->totalMatchingDocuments($term, $isLastKeyword);
             $idf           = log($count / max(1, $df));
-            foreach ($this->getAllDocumentsForKeyword($term, false, $isLastKeyword) as $document) {
+            foreach ($this->getAllDocumentsForKeyword($term, $noLimit, $isLastKeyword) as $document) {
                 $docID = $document['doc_id'];
                 $tf    = $document['hit_count'];
                 $num   = ($tfWeight + 1) * $tf;
@@ -152,6 +154,9 @@ class TNTSearch
      */
     public function searchBoolean($phrase, $numOfResults = 100)
     {
+        $keywords   = $this->breakIntoTokens($phrase);
+        $lastKeyword = end($keywords);
+
         $stack      = [];
         $startTimer = microtime(true);
 
@@ -163,11 +168,13 @@ class TNTSearch
                 $left  = array_pop($stack);
                 $right = array_pop($stack);
                 if (is_string($left)) {
-                    $left = $this->getAllDocumentsForKeyword($this->stemmer->stem($left), true)
+                    $isLastKeyword = $left == $lastKeyword;
+                    $left = $this->getAllDocumentsForKeyword($this->stemmer->stem($left), true, $isLastKeyword)
                         ->pluck('doc_id');
                 }
                 if (is_string($right)) {
-                    $right = $this->getAllDocumentsForKeyword($this->stemmer->stem($right), true)
+                    $isLastKeyword = $right == $lastKeyword;
+                    $right = $this->getAllDocumentsForKeyword($this->stemmer->stem($right), true, $isLastKeyword)
                         ->pluck('doc_id');
                 }
                 if (is_null($left)) {
@@ -184,11 +191,13 @@ class TNTSearch
                 $right = array_pop($stack);
 
                 if (is_string($left)) {
-                    $left = $this->getAllDocumentsForKeyword($this->stemmer->stem($left), true)
+                    $isLastKeyword = $left == $lastKeyword;
+                    $left = $this->getAllDocumentsForKeyword($this->stemmer->stem($left), true, $isLastKeyword)
                         ->pluck('doc_id');
                 }
                 if (is_string($right)) {
-                    $right = $this->getAllDocumentsForKeyword($this->stemmer->stem($right), true)
+                    $isLastKeyword = $right == $lastKeyword;
+                    $right = $this->getAllDocumentsForKeyword($this->stemmer->stem($right), true, $isLastKeyword)
                         ->pluck('doc_id');
                 }
                 if (is_null($left)) {
@@ -244,7 +253,7 @@ class TNTSearch
      */
     public function getAllDocumentsForKeyword($keyword, $noLimit = false, $isLastKeyword = false)
     {
-        $word = $this->getWordlistByKeyword($keyword, $isLastKeyword);
+        $word = $this->getWordlistByKeyword($keyword, $isLastKeyword, $noLimit);
         if (!isset($word[0])) {
             return new Collection([]);
         }
@@ -300,7 +309,7 @@ class TNTSearch
      *
      * @return array
      */
-    public function getWordlistByKeyword($keyword, $isLastWord = false)
+    public function getWordlistByKeyword($keyword, $isLastWord = false, $noLimit = false)
     {
         $searchWordlist = "SELECT * FROM wordlist WHERE term like :keyword LIMIT 1";
         $stmtWord       = $this->index->prepare($searchWordlist);
@@ -315,7 +324,7 @@ class TNTSearch
         $stmtWord->execute();
         $res = $stmtWord->fetchAll(PDO::FETCH_ASSOC);
 
-        if ($this->fuzziness && !isset($res[0])) {
+        if ($this->fuzziness && (!isset($res[0]) || $noLimit)) {
             return $this->fuzzySearch($keyword);
         }
         return $res;

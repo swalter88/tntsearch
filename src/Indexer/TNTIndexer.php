@@ -340,7 +340,7 @@ class TNTIndexer
             } elseif (is_array($this->config['extension'])) {
                 $includeFile = in_array($object->getExtension(), $this->config['extension']);
             } else {
-                $includeFile = stringEndsWith($name, $this->config['extension']);
+                $includeFile = ($this->config['extension'] === "" || (($temp = strlen($name) - strlen($this->config['extension'])) >= 0 && strpos($name, $this->config['extension'], $temp) !== false));
             }
 
             if ($includeFile && !in_array($name, $exclude)) {
@@ -420,11 +420,11 @@ class TNTIndexer
             $updateStmt->execute();
         }
 
-        $this->prepareAndExecuteStatement("DELETE FROM doclist WHERE doc_id = :documentId;", [
+        $res = $this->prepareAndExecuteStatement("DELETE FROM doclist WHERE doc_id = :documentId;", [
             ['key' => ':documentId', 'value' => $documentId]
         ]);
 
-        $res = $this->prepareAndExecuteStatement("DELETE FROM wordlist WHERE num_hits = 0");
+        $this->prepareAndExecuteStatement("DELETE FROM wordlist WHERE num_hits = 0");
 
         $affected = $res->rowCount();
 
